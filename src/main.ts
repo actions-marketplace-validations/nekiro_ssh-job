@@ -37,9 +37,38 @@ async function run(): Promise<void> {
 
 		core.info(`Executing commands...`);
 
+		const errBuffer: string[] = [];
+		const outBuffer: string[] = [];
+
 		await ssh.execCommand(configManager.config.command.join(";"), {
-			onStdout: chunk => console.log("out:", chunk.toString("utf8")),
-			onStderr: chunk => console.log("err:", chunk.toString("utf8")),
+			onStdout: chunk => {
+				const msg = chunk.toString("utf8").trim();
+				if (msg.length === 0 || msg.startsWith("\n")) {
+					console.log(`${msg.length === 0} ${msg.startsWith("\n")}, msg: ${msg}`);
+					return;
+				}
+
+				outBuffer.push(msg);
+
+				if (msg.endsWith("\n")) {
+					console.log("out:", outBuffer.join(""));
+					outBuffer.length = 0;
+				}
+			},
+			onStderr: chunk => {
+				const msg = chunk.toString("utf8").trim();
+				if (msg.length === 0 || msg.startsWith("\n")) {
+					console.log(`${msg.length === 0} ${msg.startsWith("\n")}, msg: ${msg}`);
+					return;
+				}
+
+				errBuffer.push(msg);
+
+				if (msg.endsWith("\n")) {
+					console.log("err:", errBuffer.join(""));
+					errBuffer.length = 0;
+				}
+			},
 		});
 
 		core.info("Done executing all commands!");
